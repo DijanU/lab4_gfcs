@@ -711,6 +711,29 @@ pub fn render_moon(framebuffer: &mut Framebuffer, uniforms: &Uniforms, vertex_ar
 }
 
 // ============================================================================
+// SHADER FOR THE SHIP
+// ============================================================================
+
+fn ship_shader(pos: &Vector3, _time: f32, normal: &Vector3) -> Vector3 {
+    let light_dir = Vector3::new(1.0, 1.0, 1.0);
+    let view_dir = Vector3::new(0.0, 0.0, 1.0); // Assuming camera is at origin looking down Z
+    let (diffuse, specular) = calculate_lighting(normal, &light_dir, &view_dir);
+
+    let base_color;
+
+    // Create a stripe pattern based on the y-coordinate
+    if (pos.y * 10.0).sin() > 0.0 {
+        base_color = Vector3::new(0.8, 0.8, 0.8); // White stripe
+    } else {
+        base_color = Vector3::new(0.2, 0.2, 0.8); // Blue stripe
+    }
+
+    let ambient = 0.2;
+    base_color * (ambient + diffuse) + Vector3::new(specular, specular, specular)
+}
+
+
+// ============================================================================
 // FRAGMENT SHADER PRINCIPAL
 // ============================================================================
 
@@ -719,13 +742,7 @@ pub fn fragment_shader(fragment: &Fragment, uniforms: &Uniforms) -> Vector3 {
     let time = uniforms.time;
     let planet_type = uniforms.planet_type;
     
-    // Calcular normal desde la posición del mundo (para esferas, el normal apunta desde el centro)
-    let mut normal = Vector3::new(
-        fragment.world_position.x,
-        fragment.world_position.y,
-        fragment.world_position.z
-    );
-    normal.normalize();
+    let normal = fragment.normal;
 
     let color = match planet_type {
         0 => rocky_planet_shader(&pos, time, &normal),
@@ -733,6 +750,7 @@ pub fn fragment_shader(fragment: &Fragment, uniforms: &Uniforms) -> Vector3 {
         2 => ocean_planet_shader(&pos, time, &normal),
         3 => volcanic_planet_shader(&pos, time, &normal),
         4 => crystal_planet_shader(&pos, time, &normal),
+        10 => ship_shader(&pos, time, &normal),
         _ => Vector3::new(0.5, 0.5, 0.5),
     };
 
