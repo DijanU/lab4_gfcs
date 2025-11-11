@@ -75,5 +75,26 @@ impl Framebuffer {
             d.clear_background(self.background_color);
             d.draw_texture(&texture, 0, 0, Color::WHITE);
         }
-    } 
+    }
+
+    pub fn draw_line(&mut self, p0: Vector3, p1: Vector3, color: Vector3) {
+        let mut x0 = p0.x as i32;
+        let mut y0 = p0.y as i32;
+        let x1 = p1.x as i32;
+        let y1 = p1.y as i32;
+
+        let dx = (x1 - x0).abs();
+        let dy = (y1 - y0).abs();
+        let sx = if x0 < x1 { 1 } else { -1 };
+        let sy = if y0 < y1 { 1 } else { -1 };
+        let mut err = dx - dy;
+
+        loop {
+            self.point(x0, y0, color, p0.z); // Use p0.z for depth, or interpolate
+            if x0 == x1 && y0 == y1 { break; }
+            let e2 = 2 * err;
+            if e2 > -dy { err -= dy; x0 += sx; }
+            if e2 < dx { err += dx; y0 += sy; }
+        }
+    }
 }

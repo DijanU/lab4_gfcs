@@ -114,17 +114,17 @@ fn main() {
 
     // Cámara inicial
     let mut camera = Camera::new(
-        Vector3::new(0.0, 5.0, 10.0),
-        Vector3::new(0.0, 0.0, 0.0),
-        Vector3::new(0.0, 1.0, 0.0),
+        Vector3::new(0.0, 5.0, 20.0), // eye
+        Vector3::new(0.0, 0.0, 0.0), // target
+        Vector3::new(0.0, 1.0, 0.0), // up
     );
 
     // Luz
     let light = Light::new(Vector3::new(0.0, 10.0, 10.0));
 
-    // Cargar modelo de la nave
-    let nave_obj = Obj::load("models/nave.obj").expect("Failed to load nave.obj");
-    let nave_vertex_array = nave_obj.get_vertex_array();
+    // Cargar modelo de la esfera
+    let sphere_obj = Obj::load("models/sphere.obj").expect("Failed to load sphere.obj");
+    let sphere_vertex_array = sphere_obj.get_vertex_array();
 
     framebuffer.set_background_color(Color::new(5, 5, 15, 255));
 
@@ -166,25 +166,25 @@ fn main() {
             window_height as f32
         );
 
-        // Renderizar la nave espacial
-        let nave_rotation = Vector3::new(0.0, time, 0.0); // Rotar la nave
-        let nave_model_matrix = create_model_matrix(
+        // Renderizar el sol
+        let sun_rotation = Vector3::new(0.0, time * 0.1, 0.0); // Rotar el sol lentamente
+        let sun_model_matrix = create_model_matrix(
             Vector3::new(0.0, 0.0, 0.0), // Centrada en el origen
-            1.0, // Escala normal
-            nave_rotation
+            3.0, // Escala grande
+            sun_rotation
         );
 
-        let nave_uniforms = Uniforms {
-            model_matrix: nave_model_matrix,
+        let sun_uniforms = Uniforms {
+            model_matrix: sun_model_matrix,
             view_matrix,
             projection_matrix,
             viewport_matrix,
             time,
             dt,
-            planet_type: 10, // Tipo especial para la nave
-            render_type: 1, // Usar un render_type para el patron
+            planet_type: 5, // Tipo para el sol
+            render_type: 3,
         };
-        render_body(&mut framebuffer, &nave_uniforms, &nave_vertex_array, &light);
+        render_body(&mut framebuffer, &sun_uniforms, &sphere_vertex_array, &light);
 
         // UI Info
         let info_text = format!("FPS: {:.0}", 1.0 / dt);

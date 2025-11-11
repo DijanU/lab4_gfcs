@@ -32,15 +32,15 @@ pub struct Uniforms {
     pub viewport_matrix: Matrix,   // Matriz de viewport (espacio de pantalla)
     pub time: f32,                 // Tiempo transcurrido en segundos
     pub dt: f32,                   // Delta time en segundos
-    pub planet_type: i32,          // 0: rocoso, 1: gaseoso, 2: personalizado, 3: con anillos, 4: de lava
-    pub render_type: i32,          // 0: planeta, 1: anillos, 2: luna
+    pub planet_type: i32,          // 0: rocoso, 1: gaseoso, 2: personalizado, 3: con anillos, 4: de lava, 5: sol
+    pub render_type: i32,          // 0: planeta, 1: anillos, 2: luna, 3: sol
 }
 ```
 
 ### Funciones Principales
 
 #### `vertex_shader(vertex: &Vertex, uniforms: &Uniforms) -> Vertex`
-Procesa los vértices aplicando transformaciones de modelo, vista, proyección y viewport.
+Procesa los vértices aplicando transformaciones de modelo, vista, proyección y viewport. Para el sol (`render_type = 3`), aplica un desplazamiento a los vértices para simular una superficie hirviente.
 
 #### `fragment_shader(fragment: &Fragment, uniforms: &Uniforms) -> Vector3`
 Genera el color de cada píxel basado en el tipo de planeta y efectos de iluminación.
@@ -67,6 +67,14 @@ Genera el color de cada píxel basado en el tipo de planeta y efectos de ilumina
 5. **`lava_planet_color(pos: &Vector3, time: f32) -> Vector3`**
    - Genera un planeta volcánico con ríos de lava.
    - Incluye efectos de iluminación y emisión de luz.
+
+6. **`sun_shader_v2(pos: &Vector3, time: f32, normal: &Vector3) -> Vector3`**
+   - Genera una estrella similar al sol con una superficie animada y turbulenta.
+   - **Complejidad del Shader:** Utiliza una combinación de `fbm` (Fractal Brownian Motion) y `turbulence` para crear una superficie compleja y en constante cambio. Se superponen múltiples capas de ruido con diferentes frecuencias y amplitudes para simular la turbulencia de la superficie, puntos calientes y eyecciones de masa coronal.
+   - **Animación Continua:** El shader utiliza el `time` uniforme para animar las capas de ruido, creando un efecto de superficie solar en evolución continua.
+   - **Emisión Variable:** La intensidad del color y la emisión de luz se modulan en función de los valores de ruido combinados, lo que da como resultado áreas más brillantes y más oscuras que simulan picos de energía y regiones más frías.
+   - **Gradiente de Color Dinámico:** El color de la estrella se controla mediante un gradiente dinámico que va del rojo oscuro al naranja, al amarillo y al blanco brillante en función de la intensidad calculada a partir del ruido. Esto simula la relación entre la temperatura y el color de la superficie de una estrella.
+   - **Distorsión del Vértice:** En el `vertex_shader`, cuando `render_type` es `3`, los vértices de la esfera se desplazan hacia afuera en función de una combinación de ruido animado. Esto crea un efecto de "ebullición" o "llamarada" en la superficie del sol, dándole una apariencia más volumétrica y dinámica.
 
 #### Funciones de Renderizado Adicionales
 

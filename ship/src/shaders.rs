@@ -49,6 +49,14 @@ pub fn vertex_shader(vertex: &Vertex, uniforms: &Uniforms) -> Vertex {
             position_vec4.y = moon_y + vertex.position.y * moon_scale;
             position_vec4.z = moon_z + vertex.position.z * moon_scale;
         }
+        3 => { // Sun displacement
+            let displacement = fbm(&Vector3::new(vertex.position.x * 2.0, vertex.position.y * 2.0, vertex.position.z * 2.0 + uniforms.time * 0.1), 3) * 0.1;
+            let displacement2 = turbulence(&Vector3::new(vertex.position.x * 5.0, vertex.position.y * 5.0, vertex.position.z * 5.0 + uniforms.time * 0.3), 2) * 0.05;
+            let total_displacement = 1.0 + displacement + displacement2;
+            position_vec4.x *= total_displacement;
+            position_vec4.y *= total_displacement;
+            position_vec4.z *= total_displacement;
+        }
         _ => {} // Planeta normal - sin deformación
     }
 
@@ -711,6 +719,45 @@ pub fn render_moon(framebuffer: &mut Framebuffer, uniforms: &Uniforms, vertex_ar
 }
 
 // ============================================================================
+// SHADER FOR THE SUN (ADVANCED)
+// ============================================================================
+fn sun_shader_v2(pos: &Vector3, time: f32, _normal: &Vector3) -> Vector3 {
+    let rotated_pos = rotate_position(pos, time, 0.05);
+
+    // Layer 1: Base turbulence for the main surface
+    let base_turbulence = turbulence(&Vector3::new(rotated_pos.x * 1.5, rotated_pos.y * 1.5, rotated_pos.z * 1.5 + time * 0.1), 5);
+
+    // Layer 2: Smaller, faster-moving "hotspots"
+    let hotspots = turbulence(&Vector3::new(rotated_pos.x * 3.5, rotated_pos.y * 3.5, rotated_pos.z * 3.5 + time * 0.3), 3);
+
+    // Layer 3: Large, slow-moving "coronal mass ejections"
+    let cme = fbm(&Vector3::new(rotated_pos.x * 0.8, rotated_pos.y * 0.8, rotated_pos.z * 0.8 - time * 0.05), 4);
+
+    // Combine the layers to get the final intensity
+    let mut intensity = base_turbulence + hotspots * 0.5 + (cme * 0.5 + 0.5).powf(4.0);
+    intensity = intensity.clamp(0.0, 1.5);
+
+    // Dynamic color gradient based on intensity
+    let color_low = Vector3::new(0.8, 0.2, 0.0); // Deep red
+    let color_mid = Vector3::new(1.0, 0.6, 0.0); // Orange
+    let color_high = Vector3::new(1.0, 1.0, 0.8); // Bright yellow/white
+
+    let mut color;
+    if intensity > 1.0 {
+        color = lerp_color(&color_mid, &color_high, (intensity - 1.0) * 2.0);
+    } else {
+        color = lerp_color(&color_low, &color_mid, intensity);
+    }
+
+    // Add variable emission
+    let emission = intensity.powf(2.0) * 0.5;
+    color = color + Vector3::new(emission, emission, emission);
+
+    color
+}
+
+
+// ============================================================================
 // SHADER FOR THE SHIP
 // ============================================================================
 
@@ -750,6 +797,7 @@ pub fn fragment_shader(fragment: &Fragment, uniforms: &Uniforms) -> Vector3 {
         2 => ocean_planet_shader(&pos, time, &normal),
         3 => volcanic_planet_shader(&pos, time, &normal),
         4 => crystal_planet_shader(&pos, time, &normal),
+        5 => sun_shader_v2(&pos, time, &normal),
         10 => ship_shader(&pos, time, &normal),
         _ => Vector3::new(0.5, 0.5, 0.5),
     };
@@ -761,6 +809,7 @@ pub fn fragment_shader(fragment: &Fragment, uniforms: &Uniforms) -> Vector3 {
         color.z.max(0.0).min(1.0),
     )
 }
+
 
 pub fn set_planet_type(_planet_type: i32) {
     // Función legacy - el tipo se pasa en uniforms
